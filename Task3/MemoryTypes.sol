@@ -9,7 +9,7 @@ interface IMemoryTypesPractice {
     function setC(uint256 _c) external;
     function calc1() external view returns(uint256);
     function calc2() external view returns(uint256);
-    function claimRewards(address _user) external view;
+    function claimRewards(address _user) external;
     function addNewMan(
         uint256 _edge, 
         uint8 _dickSize, 
@@ -55,56 +55,57 @@ contract MemoryTypesPracticeInput is IMemoryTypesPractice, Ownable {
     // Here starts part for modification. Remember that function signatures cannot be modified. 
 
     // to optimize 1
-    // Now consumes 27835 // 27835 - 27830 = 5 || 28306 - 28193 = 113
+    // Now consumes 27835
     // Should consume not more than 27830 as execution cost for non zero values
     function calc1() external view returns(uint256) {
-        return b + c * a;
+        unchecked {
+            return b + c * a;
+        }
     }
 
     // to optimize 2
-    // Now consumes 31253 // 31253 - 30000 = 1253 || 34369 - 32597 = 1778
+    // Now consumes 31253 
     // Should consume not more than 30000 as execution cost for non zero values
     function calc2() external view returns(uint256) {
         uint _a = a;
         uint _b = b;
         uint _c = c;
         
-        return ((_b + _c) * (_b + _a) + (_c + _a) * _c + _c/_a + _c/_b + 2 * _a - 1 + _a * _b * _c + _a + _b * _a^2)/
+        unchecked {
+            return ((_b + _c) * (_b + _a) + (_c + _a) * _c + _c/_a + _c/_b + 2 * _a - 1 + _a * _b * _c + _a + _b * _a^2)/
             (_a + _b) * _c  + 2 * _a;
+        }
     }  
 
     // to optimize 3
-    // Now consumes 55446 // 55446 - 54500 = 946 || 58218 - 55614 = 2604
+    // Now consumes 55446
     // Should consume not more than 54500 as execution cost
-    function claimRewards(address _user) external view {
+    function claimRewards(address _user) external {
         IUserInfo.User memory usr = userInfo.getUserInfo(_user);
-        bool claimed = rewardsClaimed[_user];
 
         require(usr.unlockTime <= block.timestamp, 
             "MemoryTypesPracticeInput: Unlock time has not yet come");
 
-        require(!claimed, 
+        require(!rewardsClaimed[_user], 
             "MemoryTypesPracticeInput: Rewards are already claimed");
         
         require(usr.balance >= MIN_BALANCE, 
             "MemoryTypesPracticeInput: To less balance");
         
-        claimed = true;
+        rewardsClaimed[_user] = true;
     }
 
     // to optimize 4
     struct Man {
         uint256 edge;
+        bytes32 idOfSecretBluetoothVacinationChip;
         uint8 dickSize;
         uint32 iq;
-        bytes32 idOfSecretBluetoothVacinationChip;
     }
 
-    mapping(uint => Man) men;
-    uint totalEntries;
+    Man[] men;
 
-
-    // Now consumes 115724 //115724 - 94000 = 21724 ||  116502 - 94736 = 21766
+    // Now consumes 115724 
     // Should consume not more than 94000 as execution cost
     function addNewMan(
         uint256 _edge, 
@@ -112,22 +113,19 @@ contract MemoryTypesPracticeInput is IMemoryTypesPractice, Ownable {
         bytes32 _idOfSecretBluetoothVacinationChip,
         uint32 _iq
     ) public {
-        men[totalEntries] = Man(_edge, _dickSize, _iq, _idOfSecretBluetoothVacinationChip);
-        unchecked {
-            ++totalEntries;
-	    }
+        men.push(Man(_edge, _idOfSecretBluetoothVacinationChip, _dickSize, _iq));
     }
 
     // to optimize 5
-    // Now consumes 36689 // 36689 - 36100 = 589 || 43742 - 41196 = 2546
+    // Now consumes 36689
     // Should consume not more than 36100 as execution cost for 6 elements array
     function getMiddleDickSize() external view returns(uint256) {
         uint256 _sum;
-        uint length = totalEntries;
+        uint length = men.length;
 
         for (uint256 i = 0; i < length;) {
-            _sum += men[i].dickSize;
             unchecked {
+                _sum += men[i].dickSize;
                 ++i;
 	        }
         }
@@ -136,24 +134,21 @@ contract MemoryTypesPracticeInput is IMemoryTypesPractice, Ownable {
     }
 
     // to optimize 6
-    // Now consumes 68675 // 68675 - 40000 = 28675 || 88765 - 71859 = 16906
+    // Now consumes 68675
     // Should consume not more than 40000 as execution cost for 6 elements array
     function numberOfOldMenWithHighIq() external view returns(uint256) {
         uint256 _count;
-        uint length = totalEntries;
+        uint length = men.length;
 
         for (uint256 i = 0; i < length;) {
-            Man memory man = men[i];
-            if (man.edge > 50) {
-                if (man.iq > 120) {
-                    unchecked {
-                        ++_count;
-                    }
+            if (men[i].edge > 50 && men[i].iq > 120) {
+                unchecked {
+                    ++_count;
                 }
             }
             unchecked {
                 ++i;
-	        }
+            }
         }
 
         return _count;
