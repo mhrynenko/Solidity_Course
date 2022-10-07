@@ -20,8 +20,8 @@ contract ContractsHaterToken is IContractsHaterToken, ERC20, SimpleToken  {
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override {
         super._beforeTokenTransfer(from, to, amount);
 
-        if (msg.sender.code.length > 0) { // addr is contract
-            require(whiteList[msg.sender], "You're not a chosen one");
+        if (to.code.length > 0) { // addr is contract
+            require(whiteList[to], "You're not a chosen one");
         }
     }
 
