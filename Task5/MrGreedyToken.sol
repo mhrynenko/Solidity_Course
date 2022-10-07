@@ -5,6 +5,8 @@ import "./IMrGreedyToken.sol";
 import "./SimpleToken.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
+uint constant FEE_AMOUNT = 10;
+
 contract MrGreedyToken is IMrGreedyToken, SimpleToken  {
     address payable public treasureAddress;
 
@@ -17,30 +19,32 @@ contract MrGreedyToken is IMrGreedyToken, SimpleToken  {
     }
 
     function _transfer(address from, address to, uint256 amount) internal virtual override {
-        
-        uint tenTokens = 10 * 10 ** decimals();
 
-        if (amount <= tenTokens) {
+        if (amount <= getFeeAmount()) {
             super._transfer(from, treasureAddress, amount);
             amount = 0;
         }
         else { 
-            super._transfer(from, treasureAddress, tenTokens);
-            amount -= tenTokens;
+            super._transfer(from, treasureAddress, getFeeAmount());
+            amount -= getFeeAmount();
+            super._transfer(from, to, amount);
         }
 
-        super._transfer(from, to, amount);
     }
 
     function treasury() external view returns (address) {
         return treasureAddress;
     }
 
-    function getResultingTransferAmount(uint256 amount_) external pure returns (uint256) {
-        if (amount_ <= 10) {
+    function getResultingTransferAmount(uint256 amount_) external view returns (uint256) {
+        if (amount_ <= getFeeAmount()) {
             return 0;
         }
         
-        return amount_ - 10;
+        return amount_ - getFeeAmount();
+    }
+
+    function getFeeAmount() internal view returns (uint256) {
+        return FEE_AMOUNT * 10 ** decimals();
     }
 }
