@@ -5,10 +5,10 @@ import "./IMrGreedyToken.sol";
 import "./SimpleToken.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract MrGreedyToken is IMrGreedyToken, ERC20, SimpleToken  {
+contract MrGreedyToken is IMrGreedyToken, SimpleToken  {
     address payable public treasureAddress;
 
-    constructor(address payable treasureAddress_) {//ERC20("MrGreedyToken", "MRG") {
+    constructor(address payable treasureAddress_) SimpleToken("MrGreedyToken", "MRG") {
         treasureAddress = treasureAddress_;
     }
 
@@ -16,21 +16,20 @@ contract MrGreedyToken is IMrGreedyToken, ERC20, SimpleToken  {
         return 6;
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override {
-        super._beforeTokenTransfer(from, to, amount); 
-
+    function _transfer(address from, address to, uint256 amount) internal virtual override {
+        
         uint tenTokens = 10 * 10 ** decimals();
 
         if (amount <= tenTokens) {
-            (bool sent, ) = treasureAddress.call{value: amount}("");
-            require(sent, "Failed to fee all token");
+            super._transfer(from, treasureAddress, amount);
             amount = 0;
-            return;
         }
-        
-        (bool sent, ) = treasureAddress.call{value: amount - tenTokens}("");
-        require(sent, "Failed to fee all token");
-        amount -= tenTokens;
+        else { 
+            super._transfer(from, treasureAddress, tenTokens);
+            amount -= tenTokens;
+        }
+
+        super._transfer(from, to, amount);
     }
 
     function treasury() external view returns (address) {
