@@ -1,37 +1,41 @@
 const { assert } = require("chai");
 const { artifacts } = require("hardhat")
 const truffleAssert = require("truffle-assertions");
+const { ZERO_ADDR } = require("../scripts/utils/constants");
+const { accounts } = require("../scripts/utils/utils");
 
 const ContractsHaterToken = artifacts.require("ContractsHaterToken")
 
 describe("ContractsHaterToken", () => {
     let firstAcc;
+    let contractsHaterToken;
+    let zeroAddr;
+    let leftAcc;
+
+    beforeEach(async () => {
+        contractsHaterToken = await ContractsHaterToken.new()
+    })
 
     before("setup", async () => {
-        firstAcc = (await web3.eth.getAccounts())[0]
+        firstAcc = await accounts(0)
+        zeroAddr = ZERO_ADDR
+        leftAcc = await accounts(5)
     })
 
     describe("addToWhitelist()", () => {
         it("should work with zero address", async () => {
-            const contractsHaterToken = await ContractsHaterToken.new()
-            const zeroAddr = '0x0000000000000000000000000000000000000000'
-
             await contractsHaterToken.addToWhitelist(zeroAddr)
 
             assert.equal(await contractsHaterToken.whiteList(zeroAddr), true)
         })
 
         it("should work with user address", async () => {
-            const contractsHaterToken = await ContractsHaterToken.new()
-            const leftAcc = (await web3.eth.getAccounts())[5]
-
             await contractsHaterToken.addToWhitelist(leftAcc)
 
             assert.equal(await contractsHaterToken.whiteList(leftAcc), true)
         })
 
         it("should work with contract address", async () => {
-            const contractsHaterToken = await ContractsHaterToken.new()
             const contract = await artifacts.require("SimpleToken").new('Simple Token', 'ST')
 
             await contractsHaterToken.addToWhitelist(contract.address)
@@ -40,8 +44,6 @@ describe("ContractsHaterToken", () => {
         })
 
         it('should work only with owner', async () => {
-            const contractsHaterToken = await ContractsHaterToken.new()
-            
             const notOwner = (await web3.eth.getAccounts())[2]
 
             await truffleAssert.reverts(contractsHaterToken.addToWhitelist(firstAcc, { from :  notOwner }), 'Ownable: caller is not the owner')
@@ -50,9 +52,6 @@ describe("ContractsHaterToken", () => {
 
     describe("removeFromWhitelist()", () => {
         it("should work with zero address", async () => {
-            const contractsHaterToken = await ContractsHaterToken.new()
-            const zeroAddr = '0x0000000000000000000000000000000000000000'
-
             await contractsHaterToken.addToWhitelist(zeroAddr)
             await contractsHaterToken.removeFromWhitelist(zeroAddr)
 
@@ -60,9 +59,6 @@ describe("ContractsHaterToken", () => {
         })
 
         it("should work with user address", async () => {
-            const contractsHaterToken = await ContractsHaterToken.new()
-            const leftAcc = (await web3.eth.getAccounts())[5]
-
             await contractsHaterToken.addToWhitelist(leftAcc)
             await contractsHaterToken.removeFromWhitelist(leftAcc)
 
@@ -70,7 +66,6 @@ describe("ContractsHaterToken", () => {
         })
 
         it("should work with contract address", async () => {
-            const contractsHaterToken = await ContractsHaterToken.new()
             const contract = await artifacts.require("SimpleToken").new('Simple Token', 'ST')
 
             await contractsHaterToken.addToWhitelist(contract.address)
@@ -80,7 +75,6 @@ describe("ContractsHaterToken", () => {
         })
 
         it("should work okay without previous adding address", async () => {
-            const contractsHaterToken = await ContractsHaterToken.new()
             const leftAcc = (await web3.eth.getAccounts())[5]
 
             await contractsHaterToken.removeFromWhitelist(leftAcc)
@@ -89,8 +83,6 @@ describe("ContractsHaterToken", () => {
         })
 
         it('should work only with owner', async () => {
-            const contractsHaterToken = await ContractsHaterToken.new()
-            
             const notOwner = (await web3.eth.getAccounts())[2]
 
             await truffleAssert.reverts(contractsHaterToken.addToWhitelist(firstAcc, { from :  notOwner }), 'Ownable: caller is not the owner')
@@ -99,14 +91,10 @@ describe("ContractsHaterToken", () => {
 
     describe('_beforeTokenTransfer()', () => { 
         it("should revert transfer with zero address", async () => {
-            const contractsHaterToken = await ContractsHaterToken.new()
-            const zeroAddr = '0x0000000000000000000000000000000000000000'
-
             await truffleAssert.reverts(contractsHaterToken.transfer(zeroAddr, 10), 'ERC20: transfer to the zero address')
         })
 
         it("should revert transfer to contract address not in list", async () => {
-            const contractsHaterToken = await ContractsHaterToken.new()
             const contract = await artifacts.require("SimpleToken").new('Simple Token', 'ST')
 
             await contractsHaterToken.mint(firstAcc, 10)
@@ -115,9 +103,6 @@ describe("ContractsHaterToken", () => {
         })
 
         it("should work transfer to user address", async () => {
-            const contractsHaterToken = await ContractsHaterToken.new()
-            const leftAcc = (await web3.eth.getAccounts())[5]
-
             await contractsHaterToken.mint(firstAcc, 10)
             await contractsHaterToken.transfer(leftAcc, 5)
 
@@ -125,7 +110,6 @@ describe("ContractsHaterToken", () => {
         })
 
         it("should work transfer to contract address in list", async () => {
-            const contractsHaterToken = await ContractsHaterToken.new()
             const contract = await artifacts.require("SimpleToken").new('Simple Token', 'ST')
 
             await contractsHaterToken.mint(firstAcc, 10)
@@ -136,18 +120,12 @@ describe("ContractsHaterToken", () => {
         })
 
         it("should revert transfer with lower balance", async () => {
-            const contractsHaterToken = await ContractsHaterToken.new()
-            const leftAcc = (await web3.eth.getAccounts())[5]
-
             await contractsHaterToken.mint(firstAcc, 10)
 
             await truffleAssert.reverts(contractsHaterToken.transfer(leftAcc, 15), `ERC20: transfer amount exceeds balance`)
         })
 
         it("should work transfer with 0 amount", async () => {
-            const contractsHaterToken = await ContractsHaterToken.new()
-            const leftAcc = (await web3.eth.getAccounts())[5]
-
             await contractsHaterToken.mint(firstAcc, 10)
             await contractsHaterToken.transfer(leftAcc, 0);
 
@@ -155,9 +133,6 @@ describe("ContractsHaterToken", () => {
         })
 
         it("should work transfer with amount between 0 and balance", async () => {
-            const contractsHaterToken = await ContractsHaterToken.new()
-            const leftAcc = (await web3.eth.getAccounts())[5]
-
             await contractsHaterToken.mint(firstAcc, 10)
             await contractsHaterToken.transfer(leftAcc, 7);
 
